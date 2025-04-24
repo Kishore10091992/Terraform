@@ -85,13 +85,13 @@ tags = {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_all" {
   security_group_id = aws_security_group.Terraform_sg.id
-  cidr_ipv4        = "0.0.0.0/0"
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = -1
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_tcp" {
   security_group_id = aws_security_group.Terraform_sg.id
-  cidr_ipv4        = aws_vpc.Terraform_vpc.cidr_block
+  cidr_ipv4         = aws_vpc.Terraform_vpc.cidr_block
   from_port         = 443
   ip_protocol       = "tcp"
   to_port           = 443
@@ -112,26 +112,36 @@ resource "aws_key_pair" "Terraform_keypair" {
   }
 }
 
+resource "aws_network_interface" "primary" {
+  subnet_id       = aws_subnet.Terraform_pubsub.id
+  security_groups = [aws_security_group.Terraform_sg.id]
+}
+
+resource "aws_eip" "public_ip" {
+  vpc = true
+  network_interface = aws_network_interface.primary.id
+}
+
+resource "aws_network_interface" "secondary" {
+  subnet_id = aws_subnet.Terraform_prisub.id
+}
+
 resource "aws_instance" "Terraform_Ec2_Instance" {
-  ami                    = "ami-0e449927258d45bc4"
-  instance_type          = "t2.micro"
-  key_name   	           = aws_key_pair.Terraform_keypair.key_name
-  subnet_id 	           = aws_subnet.Terraform_pubsub.id
-  vpc_security_group_ids = [aws_security_group.Terraform_sg.id]
+  ami           = "ami-0e449927258d45bc4"
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.Terraform_keypair.key_name
 
   network_interface {
-   device_index 	             = 0
-   subnet_id  		             = aws_subnet.Terraform_pubsub.id
-   associate_public_ip_address = true
+    device_index         = 0
+    network_interface_id = aws_network_interface.primary.id
   }
 
   network_interface {
-   device_index 	             = 1
-   subnet_id  		             = aws_subnet.Terraform_prisub.id
-   associate_public_ip_address = false
+    device_index         = 1
+    network_interface_id = aws_network_interface.secondary.id
   }
 
-  tags = {
-    Name = "Terraform_Ec2_Instance"
-  }
+  tags = {
+    Name = "Terraform_Ec2_Instance"
+  }
 }
