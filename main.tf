@@ -99,6 +99,39 @@ resource "aws_vpc_security_group_ingress_rule" "allow_tcp" {
 
 resource "aws_vpc_security_group_egress_rule" "allow_all" {
   security_group_id = aws_security_group.Terraform_sg.id
-  cidr_ipv4        = "0.0.0.0/0"
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = -1
+}
+
+resource "aws_key_pair" "Terraform_keypair" {
+  key_name   = "Terraform_keypair"
+  public_key = file("~/.ssh/id_rsa.pub")
+
+  tags = {
+   Name = "Terraform_keypair"
+  }
+}
+
+resource "aws_instance" "Terraform_Ec2_Instance" {
+  ami                    = "ami-0e449927258d45bc4"
+  instance_type          = "t2.micro"
+  key_name   	           = aws_key_pair.Terraform_keypair.key_name
+  subnet_id 	           = aws_subnet.Terraform_pubsub.id
+  vpc_security_group_ids = [aws_security_group.Terraform_sg.id]
+
+  network_interface {
+   device_index 	             = 0
+   subnet_id  		             = aws_subnet.Terraform_pubsub.id
+   associate_public_ip_address = true
+  }
+
+  network_interface {
+   device_index 	             = 1
+   subnet_id  		             = aws_subnet.Terraform_prisub.id
+   associate_public_ip_address = false
+  }
+
+  tags = {
+    Name = "Terraform_Ec2_Instance"
+  }
 }
