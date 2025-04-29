@@ -141,6 +141,14 @@ resource "aws_instance" "Terraform_Ec2_Instance" {
     network_interface_id = aws_network_interface.secondary.id
   }
 
+  user_data =<<-EOF
+   sudo yum update -y
+   sudo yum install -y httpd
+   systemctl start httpd
+   systemctl enable httpd
+   echo "Hello world from Terraform!" > /var/www/html/index.html
+   EOF
+
   tags = {
     Name = "Terraform_Ec2_Instance"
   }
